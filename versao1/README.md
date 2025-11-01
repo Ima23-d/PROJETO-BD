@@ -41,3 +41,4 @@ DB_CONFIG = {
 ## Execução do Sistema
 
 python app.py
+
