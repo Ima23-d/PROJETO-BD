@@ -1,23 +1,21 @@
 import psycopg2
 
-# Função para conectar ao banco de dados PostgreSQL
 def conectar():
     try:
         conexao = psycopg2.connect(
-            dbname="meu_banco",   # Substitua pelo nome do seu banco
-            user="postgres",      # Usuário do PostgreSQL
-            password="1234",      # Senha do PostgreSQL
-            host="localhost",     # Servidor
-            port="5432"           # Porta padrão
+            dbname="meu_banco",
+            user="postgres",
+            password="1234",
+            host="localhost",
+            port="5432"
         )
-        print("✅ Conexão estabelecida com sucesso!")
+        print("Conexão estabelecida com sucesso!")
         return conexao
     except Exception as erro:
-        print("❌ Erro ao conectar ao banco de dados:", erro)
+        print("Erro ao conectar ao banco de dados:", erro)
         return None
 
 
-# Função para criar as tabelas com base no DDL fornecido
 def criar_tabelas(con):
     ddl = """
     CREATE TABLE IF NOT EXISTS Alunos (
@@ -70,53 +68,63 @@ def criar_tabelas(con):
         FOREIGN KEY (ID_Planos) REFERENCES Planos(ID_Planos)
     );
     """
-
-    try:
-        cursor = con.cursor()
-        cursor.execute(ddl)
-        con.commit()
-        print("📘 Todas as tabelas foram criadas (ou já existiam).")
-    except Exception as erro:
-        print("❌ Erro ao criar tabelas:", erro)
+    cursor = con.cursor()
+    cursor.execute(ddl)
+    con.commit()
+    print("Tabelas criadas com sucesso (ou já existiam).")
 
 
-# Exemplo de inserção de dados
-def inserir_instrutor(con, nome, cref):
-    try:
-        cursor = con.cursor()
-        cursor.execute(
-            "INSERT INTO Instrutores (Nome, CREF) VALUES (%s, %s)",
-            (nome, cref)
-        )
-        con.commit()
-        print("✅ Instrutor inserido com sucesso!")
-    except Exception as erro:
-        print("❌ Erro ao inserir instrutor:", erro)
+# ---------- CRUD SIMPLES ----------
+def cadastrar_instrutor(con):
+    nome = input("Nome do instrutor: ")
+    cref = input("CREF: ")
+    cursor = con.cursor()
+    cursor.execute("INSERT INTO Instrutores (Nome, CREF) VALUES (%s, %s)", (nome, cref))
+    con.commit()
+    print("Instrutor cadastrado com sucesso!")
 
 
 def listar_instrutores(con):
-    try:
-        cursor = con.cursor()
-        cursor.execute("SELECT * FROM Instrutores")
-        registros = cursor.fetchall()
-        print("📋 Lista de instrutores:")
-        for linha in registros:
-            print(f"ID: {linha[0]} | Nome: {linha[1]} | CREF: {linha[2]}")
-    except Exception as erro:
-        print("❌ Erro ao listar instrutores:", erro)
+    cursor = con.cursor()
+    cursor.execute("SELECT * FROM Instrutores ORDER BY Nome;")  # usando ORDER BY
+    registros = cursor.fetchall()
+    print("\n--- Instrutores ---")
+    for linha in registros:
+        print(f"ID: {linha[0]} | Nome: {linha[1]} | CREF: {linha[2]}")
 
 
-# Programa principal
+# ---------- MENU USANDO MATCH CASE ----------
+def menu(con):
+    while True:
+        print("""
+        ====== MENU PRINCIPAL ======
+        1. Cadastrar Instrutor
+        2. Listar Instrutores
+        0. Sair
+        """)
+        try:
+            opcao = int(input("Escolha uma opção: "))
+        except ValueError:
+            print("Digite apenas números!")
+            continue
+
+        match opcao:
+            case 1:
+                cadastrar_instrutor(con)
+            case 2:
+                listar_instrutores(con)
+            case 0:
+                print("Encerrando o sistema...")
+                break
+            case _:
+                print("Opção inválida. Tente novamente.")
+
+
+# ---------- EXECUÇÃO ----------
 if __name__ == "__main__":
     conexao = conectar()
     if conexao:
         criar_tabelas(conexao)
-
-        # Inserção de exemplo
-        inserir_instrutor(conexao, "Carlos Souza", "CREF12345")
-        inserir_instrutor(conexao, "Marina Lopes", "CREF98765")
-
-        listar_instrutores(conexao)
-
+        menu(conexao)
         conexao.close()
-        print("🔒 Conexão encerrada.")
+        print("Conexão encerrada.")
